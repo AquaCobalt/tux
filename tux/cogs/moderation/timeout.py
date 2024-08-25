@@ -1,11 +1,10 @@
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 import discord
 from discord.ext import commands
 from loguru import logger
 
-from prisma.enums import CaseType
 from tux.utils import checks
 from tux.utils.flags import TimeoutFlags
 
@@ -66,7 +65,7 @@ class Timeout(ModerationCogBase):
     async def timeout(
         self,
         ctx: commands.Context[commands.Bot],
-        target: discord.Member,
+        targets: commands.Greedy[discord.Member],
         *,
         flags: TimeoutFlags,
     ) -> None:
@@ -77,8 +76,8 @@ class Timeout(ModerationCogBase):
         ----------
         ctx : commands.Context[commands.Bot]
             The context in which the command is being invoked.
-        target : discord.Member
-            The member to timeout.
+        targets : commands.Greedy[discord.Member]
+            The members to timeout.
         flags : TimeoutFlags
             The flags for the command.
 
@@ -94,33 +93,36 @@ class Timeout(ModerationCogBase):
 
         moderator = ctx.author
 
-        if not await self.check_conditions(ctx, target, moderator, "timeout"):
-            return
+        for target in targets:
+            logger.info(f"Timeout command invoked by {moderator} on {target} with reason: {flags.reason}")
 
-        if target.is_timed_out():
-            await ctx.send(f"{target} is already timed out.", delete_after=30, ephemeral=True)
-            return
+        # if not await self.check_conditions(ctx, target, moderator, "timeout"):
+        #     return
 
-        duration = parse_time_string(flags.duration)
+        # if target.is_timed_out():
+        #     await ctx.send(f"{target} is already timed out.", delete_after=30, ephemeral=True)
+        #     return
 
-        try:
-            await target.timeout(duration, reason=flags.reason)
+        # duration = parse_time_string(flags.duration)
 
-        except discord.DiscordException as e:
-            await ctx.send(f"Failed to timeout {target}. {e}", delete_after=30, ephemeral=True)
-            return
+        # try:
+        #     await target.timeout(duration, reason=flags.reason)
 
-        case = await self.db.case.insert_case(
-            case_target_id=target.id,
-            case_moderator_id=ctx.author.id,
-            case_type=CaseType.TIMEOUT,
-            case_reason=flags.reason,
-            case_expires_at=datetime.now(UTC) + duration,
-            guild_id=ctx.guild.id,
-        )
+        # except discord.DiscordException as e:
+        #     await ctx.send(f"Failed to timeout {target}. {e}", delete_after=30, ephemeral=True)
+        #     return
 
-        await self.send_dm(ctx, flags.silent, target, flags.reason, f"timed out for {flags.duration}")
-        await self.handle_case_response(ctx, CaseType.TIMEOUT, case.case_id, flags.reason, target, flags.duration)
+        # case = await self.db.case.insert_case(
+        #     case_target_id=target.id,
+        #     case_moderator_id=ctx.author.id,
+        #     case_type=CaseType.TIMEOUT,
+        #     case_reason=flags.reason,
+        #     case_expires_at=datetime.now(UTC) + duration,
+        #     guild_id=ctx.guild.id,
+        # )
+
+        # await self.send_dm(ctx, flags.silent, target, flags.reason, f"timed out for {flags.duration}")
+        # await self.handle_case_response(ctx, CaseType.TIMEOUT, case.case_id, flags.reason, target, flags.duration)
 
 
 async def setup(bot: commands.Bot) -> None:
