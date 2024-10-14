@@ -35,7 +35,10 @@
             enable = true;
             args = ["--edit"];
           };
-          statix.enable = true;
+          statix = {
+            enable = true;
+            args = ["fix"];
+          };
         };
         excludes = ["(^\.archive|/typings)/"];
       };
