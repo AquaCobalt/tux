@@ -5,7 +5,6 @@ __pycache__/
 
 # Replit
 *.replit
-*.nix
 
 # C extensions
 *.so
@@ -166,3 +165,6 @@ config/settings.yml
 
 # MacOS
 .DS_Store
+
+# Pre-commit hooks
+.pre-commit-config.yaml
